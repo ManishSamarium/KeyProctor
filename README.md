@@ -1,157 +1,201 @@
-# 🛡️ KeyProctor
+# KeyProctor — Behavioural Exam Integrity System
 
-Behavioural-keystroke exam + code-lab proctoring built on Streamlit.
+A full-stack MERN application for exam and lab proctoring using **keystroke dynamics** and **behavioural biometrics**. KeyProctor verifies student identity through their unique typing patterns using dual ML models (LSTM + Random Forest/SVM ensemble).
 
-- **Login flow** — animated gradient landing page, role chooser (Student / Faculty), login + register tabs.
-- **Faculty dashboard** — Overview · Exam Management · Code Lab · Reports · Settings.
-- **Student dashboard** — Course list → Course detail → Exam portal (with phrase-verification gate, continuous auth, copy-paste blocking) → Lab portal (VS Code-style C++ editor with auto-grading).
-- **Compiler** — `CppCompiler` with Judge0 → Piston → local g++ fallback.
-# 🛡️ KeyProctor
+## 🏗️ Architecture
 
-Behavioural-keystroke exam + code-lab proctoring built on Streamlit.
+```
+KeyProctor/
+├── frontend/       # React 19 + Vite + Tailwind CSS 4
+├── backend/        # Node.js + Express 5 + MongoDB + Socket.IO
+└── ml-service/     # Python FastAPI + PyTorch LSTM + scikit-learn
+```
 
-- **Login flow** — animated gradient landing page, role chooser (Student / Faculty), login + register tabs.
-- **Faculty dashboard** — Overview · Exam Management · Code Lab · Reports · Settings.
-- **Student dashboard** — Course list → Course detail → Exam portal (with phrase-verification gate, continuous auth, copy-paste blocking) → Lab portal (VS Code-style C++ editor with auto-grading).
-- **Compiler** — `CppCompiler` with Judge0 → Piston → local g++ fallback.
-- **Behavioural ML** — RF + SVM ensemble over 13 keystroke-timing features (RF 60% + SVM 40%, threshold 0.45). Continuous auth checks every 30 seconds during both exams and labs.
+| Service | Tech Stack | Port | Deploy To |
+|---------|-----------|------|-----------|
+| **Frontend** | React 19, Vite 8, Tailwind CSS 4, Redux Toolkit, Monaco Editor | 5173 | Vercel |
+| **Backend** | Express 5, Mongoose 9, Socket.IO, JWT, bcrypt | 5001 | Render |
+| **ML Service** | FastAPI, PyTorch, scikit-learn, LSTM + RF/SVM | 8001 | Render |
 
----
+## ✨ Features
 
-## 1. Quick start
+### Core
+- 🔐 **Behavioral Authentication** — Keystroke dynamics (13-feature extraction: dwell time, flight time, rhythm, WPM, etc.)
+- 🧠 **Dual ML Models** — LSTM deep learning + Random Forest/SVM ensemble with automatic fallback
+- 🔄 **Auto-retraining** — Models retrain when sufficient enrollment data is collected
+
+### Exam System
+- 📝 Faculty creates exams with dynamic questions
+- ⏱️ Timed exam sessions with auto-submit
+- 🛡️ Real-time behavioral monitoring (30-second auth checks via Socket.IO)
+- 🚫 Copy/paste/cut/drop blocking with toast notifications
+- 📊 Integrity scoring (behavioral + paste penalty composite)
+
+### Lab System
+- 💻 Monaco-powered C++ code editor with syntax highlighting
+- ▶️ Code compilation with 3-engine fallback (local g++ → Piston → Judge0)
+- ✅ Automated test-case grading with per-test results
+- 🔒 Same copy-paste restrictions and behavioral auth as exams
+
+### User Flows
+- 🎓 **Students**: Register → Collect 10 typing samples → Browse & enroll in courses → Take exams/labs
+- 👨‍🏫 **Faculty**: Register with course → Create exams/labs → Monitor students live → Review submissions
+- 🔑 **Login**: Password → Type phrase once for behavioral verification (20% confidence threshold)
+
+## 🚀 Local Development
+
+### Prerequisites
+- Node.js 18+
+- Python 3.10+
+- MongoDB (local or Atlas)
+- g++ (optional, for local C++ compilation)
+
+### Setup
 
 ```bash
-git clone https://github.com/ManishSamarium/KeyProctor.git keyproctor
-cd keyproctor
-python -m venv venv && source venv/bin/activate     # Windows: venv\Scripts\activate
+# 1. Clone
+git clone https://github.com/ManishSamarium/KeyProctor.git
+cd KeyProctor
+
+# 2. Backend
+cd backend
+cp .env.example .env    # Edit with your MongoDB URI
+npm install
+npm start               # http://localhost:5001
+
+# 3. ML Service
+cd ../ml-service
 pip install -r requirements.txt
-python seed_demo.py                                  # creates demo users + exam + lab
-streamlit run app.py
+python app.py           # http://localhost:8001
+
+# 4. Frontend
+cd ../frontend
+npm install
+npm run dev             # http://localhost:5173
 ```
 
-Open `http://localhost:8501` and choose a role.
+### Environment Variables
 
-### Demo credentials
-
-All passwords are `demo123`.
-
-| Role     | Username      | Notes                                  |
-|----------|---------------|----------------------------------------|
-| Faculty  | `prof_sharma` | Dr. Priya Sharma · CS301 — Data Structures |
-| Student  | `alice_cs`    | Alice Reddy · EN21CS001                 |
-| Student  | `bob_cs`      | Bob Kumar · EN21CS002                   |
-| Student  | `charlie`     | Charlie Singh · EN21CS003               |
-
----
-
-## 2. Project layout
-
-```
-behavioral_auth/
-├── app.py              # Streamlit entry — login + faculty + student pages
-├── compiler.py         # CppCompiler (Judge0 → Piston → local g++) + grade_submission
-├── data_manager.py     # JSON-backed persistence (users, exams, labs, submissions, …)
-├── ml_model.py         # RF + SVM ensemble (DO NOT EDIT)
-├── seed_demo.py        # Seeds 1 faculty, 3 students, 1 exam, 1 lab, ML model
-├── frontend/
-│   └── index.html      # Declared component — keystroke widgets + cp-blocking
-├── data/               # JSON files (auto-created)
-├── models/             # Trained ML model (.pkl)
-├── requirements.txt
-├── .env.example
-└── README.md
+**backend/.env**
+```env
+PORT=5001
+MONGO_URI=mongodb://127.0.0.1:27017/typeproctor
+JWT_SECRET=your-secret-key
+JWT_REFRESH_SECRET=your-refresh-secret
+ML_SERVICE_URL=http://localhost:8001
+CLIENT_URL=http://localhost:5173
 ```
 
----
-
-## 3. Demo flow (3 minutes)
-
-1. `python seed_demo.py` (one-time).
-2. `streamlit run app.py`.
-3. **Faculty side**: log in as `prof_sharma / demo123`. The Overview shows 3 students enrolled and the demo exam + lab. Browse Exam Management → Active exams to see the seeded mid-sem.
-4. **Student side**: open a fresh tab, log in as `alice_cs / demo123`. Click the CS301 course card.
-5. **Exam**: click *Start exam*. Type the verification phrase (`the quick brown fox jumps`). Enter exam → answer questions for ~30 s. Try Ctrl-V; it's blocked and a toast appears. Continuous auth fires every 30 s (status dot + countdown).
-6. **Lab**: open *Lab 1*. Solve "Hello World" in the dark editor → click ▶ Run → ⬆ Submit. Score is graded via local g++ / Piston / Judge0 (whichever is available).
-7. **Back to faculty**: Reports → pick Alice → see confidence timeline, per-exam summary, academic history. Exam Management → Submissions → drill into Alice's row → see answers, auth log, paste events.
-
----
-
-## 4. Compilation engines
-
-The compiler tries every available engine in priority order and returns the first usable result.
-
-| Engine     | Setup                              | Free tier                |
-|------------|------------------------------------|--------------------------|
-| Judge0     | RapidAPI key in `.env`             | 50 req/day               |
-| Piston     | none                               | unlimited (rate-limited) |
-| Local g++  | install MinGW / `apt install g++`  | unlimited                |
-
-To enable Judge0, copy `.env.example` → `.env` and paste your key:
-
-```bash
-JUDGE0_API_KEY=your_rapidapi_key_here
+**frontend/.env** (optional)
+```env
+VITE_API_URL=http://localhost:5001
 ```
 
-Without a key, Piston handles online compilation and local g++ kicks in offline.
+## ☁️ Deployment
 
----
+### Frontend → Vercel
 
-## 5. Behavioural authentication
+1. Import repo on [vercel.com](https://vercel.com)
+2. Set **Root Directory** to `frontend`
+3. Set **Framework Preset** to `Vite`
+4. Add environment variable:
+   - `VITE_API_URL` = your Render backend URL (e.g. `https://keyproctor-backend.onrender.com`)
+5. Deploy
 
-**13 keystroke features** are computed in JS and Python identically:
+### Backend → Render (Web Service)
 
-| #  | Feature             | What it measures                              |
-|----|---------------------|-----------------------------------------------|
-| 1  | mean_dwell          | Avg key-hold duration                         |
-| 2  | std_dwell           | Std-dev of key-hold                           |
-| 3  | median_dwell        | Median key-hold                               |
-| 4  | max_dwell           | Max key-hold                                  |
-| 5  | mean_flight         | Avg flight time                               |
-| 6  | std_flight          | Std-dev flight                                |
-| 7  | median_flight       | Median flight                                 |
-| 8  | min_flight          | Min positive flight                           |
-| 9  | typing_speed_wpm    | `(n_keys/5)/(total_time_ms/60000)`            |
-| 10 | dwell_flight_ratio  | `mean_dwell / mean_flight`                    |
-| 11 | rhythm_consistency  | `1 − std_dwell/mean_dwell` (clamped 0–1)      |
-| 12 | total_time_ms       | Last upTime − first downTime                  |
-| 13 | n_keys              | Keystroke count                               |
+1. Create **Web Service** on [render.com](https://render.com)
+2. Connect your repo
+3. Settings:
+   - **Root Directory**: `backend`
+   - **Build Command**: `npm install`
+   - **Start Command**: `node server.js`
+4. Add environment variables:
+   - `PORT` = `5001`
+   - `MONGO_URI` = your MongoDB Atlas connection string
+   - `JWT_SECRET` = a strong secret
+   - `JWT_REFRESH_SECRET` = another strong secret
+   - `ML_SERVICE_URL` = your Render ML service URL
+   - `CLIENT_URL` = your Vercel frontend URL
 
-Decision: `confidence = 0.60·RF.predict_proba + 0.40·SVM.predict_proba`. Accepted if `confidence ≥ 0.45`.
+### ML Service → Render (Web Service)
 
-### Continuous auth + copy-paste blocking
+1. Create another **Web Service** on [render.com](https://render.com)
+2. Settings:
+   - **Root Directory**: `ml-service`
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `uvicorn app:app --host 0.0.0.0 --port $PORT`
+3. No additional env vars needed (optional: `JUDGE0_API_KEY` for Judge0 compiler)
 
-The declared component (`frontend/index.html`) talks to Python via `Streamlit.setComponentValue` (postMessage). It captures keystrokes on every answer textarea / code editor, fires a continuous check every 30 s, and **prevents** paste / copy / cut / right-click / drop on those fields (logging each attempt).
+### MongoDB → Atlas
 
----
+1. Create a free cluster at [mongodb.com/atlas](https://www.mongodb.com/atlas)
+2. Whitelist `0.0.0.0/0` for Render access
+3. Copy the connection string to `MONGO_URI`
 
-## 6. Integrity score
+## 📁 Project Structure
 
 ```
-behavioral_score = avg_confidence * 100
-paste_penalty    = {0:100, 1:80, 2:55, ≥3:20}[paste_count]
-integrity        = behavioral_score * 0.6 + paste_penalty * 0.4
-grade            = ≥70 High · 40-69 Suspicious · <40 Flagged
+frontend/
+├── src/
+│   ├── pages/          # LoginPage, StudentDashboard, ExamPortal, LabPortal, FacultyDashboard, LabManage
+│   ├── hooks/          # useKeystrokeDynamics, useCopyPasteBlock, useAuthMonitor
+│   ├── api.js          # Axios instance with JWT interceptor
+│   ├── store.js        # Redux store
+│   ├── authSlice.js    # Auth state management
+│   └── App.jsx         # Router + protected routes
+
+backend/
+├── models/             # User, Exam, Submission, Lab, LabSubmission, Enrollment, AuthLog, CopyPasteLog
+├── routes/             # auth, exam, lab, faculty routes
+├── services/           # ML service connector
+├── socket/             # Socket.IO real-time monitoring
+├── middleware/          # JWT auth + role-based access
+└── server.js           # Express app entry point
+
+ml-service/
+├── app.py              # FastAPI endpoints (predict, retrain, compile, grade)
+├── compiler.py         # C++ compiler with 3-engine fallback
+├── ml_model.py         # Random Forest + SVM ensemble
+├── lstm_model.py       # LSTM deep learning model
+└── models/             # Trained model weights
 ```
 
-Faculty Submissions and Reports pages show this grade alongside raw avg-confidence and paste counts.
+## 🧪 API Endpoints
 
----
+### Auth
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/register` | Create account |
+| POST | `/api/auth/login` | Password authentication |
+| POST | `/api/auth/verify-behavior` | Behavioral verification |
+| POST | `/api/auth/enroll-sample` | Submit keystroke sample |
+| GET | `/api/auth/courses` | List all available courses |
+| POST | `/api/auth/enroll-course` | Enroll in a course |
+| GET | `/api/auth/my-enrollments` | Student's enrolled courses |
 
-## 7. Why a declared component (and not `?ks_json=` URL params)
+### Exams
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/exams` | Create exam (faculty) |
+| GET | `/api/exams` | List exams |
+| POST | `/api/exams/:id/submit` | Submit exam |
 
-Streamlit's `components.v1.html` iframe is sandboxed without `allow-top-navigation`, which blocks `window.parent.location.href = …`. We therefore use a properly **declared component** + `Streamlit.setComponentValue` over `postMessage`, which works regardless of sandbox flags. The functional contract is identical — JS sends a JSON payload, Python receives it on the next rerun via the component's return value.
+### Labs
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/labs` | Create lab (faculty) |
+| POST | `/api/labs/:id/run` | Compile & run code |
+| POST | `/api/labs/:id/submit` | Submit for grading |
 
----
+### ML Service
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/predict` | Behavioral prediction |
+| POST | `/retrain` | Retrain models |
+| POST | `/compile` | Compile C++ code |
+| POST | `/grade` | Grade against test cases |
 
-## 8. Limitations
+## 📄 License
 
-- Small in-lab dataset; numbers are illustrative.
-- LMS integration (LTI 1.3) not yet built.
-- Browser timing precision is clamped to 1 ms in some browsers (Spectre mitigations) — bounds achievable EER.
-- Passwords use unsalted SHA-256 — adequate for a mini-project, **not** production.
-
----
-
-## 9. License
-
-MIT — IIIT Raichur mini-project, 2026.
+MIT

@@ -1,5 +1,39 @@
-.qodo/
-.venv/
-venv/
+# Dependencies
+node_modules/
 __pycache__/
 *.pyc
+.venv/
+venv/
+env/
+
+# Build
+frontend/dist/
+frontend/.vite/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# ML Models (large binary files)
+ml-service/models/*.pkl
+ml-service/models/*.pt
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+
+# Misc
+*.tgz
+.gemini/
