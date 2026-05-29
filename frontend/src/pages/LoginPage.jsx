@@ -38,8 +38,8 @@ export default function LoginPage() {
         // Not enrolled yet — go to sample collection
         setPendingUser(data);
         setPendingToken(data.accessToken);
-        // Temporarily login so api calls work for enroll-sample
-        dispatch(loginSuccess(data));
+        // Temporarily set token for API calls but don't dispatch yet to prevent auto-redirect
+        localStorage.setItem('tp_token', data.accessToken);
         setStage('enroll');
       } else {
         dispatch(loginSuccess(data));
@@ -66,7 +66,8 @@ export default function LoginPage() {
       if (role === 'student') {
         setPendingUser(data);
         setPendingToken(data.accessToken);
-        dispatch(loginSuccess(data));
+        // Temporarily set token for API calls but don't dispatch yet to prevent auto-redirect
+        localStorage.setItem('tp_token', data.accessToken);
         setStage('enroll');
       } else {
         // Faculty — just go to login
@@ -85,7 +86,9 @@ export default function LoginPage() {
   };
 
   const handleEnrollComplete = () => {
-    // Already logged in via dispatch above, just navigate
+    // Update the pending user object to show they are now enrolled, then dispatch
+    const updatedUser = { ...pendingUser, user: { ...pendingUser.user, enrolled: true, sampleCount: 10 } };
+    dispatch(loginSuccess(updatedUser));
     navigate('/student');
   };
 
